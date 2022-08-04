@@ -1,0 +1,5 @@
+# Specify filepatterns you want git to ignore.
+.ipynb_checkpoints/EDA-checkpoint.ipynb
+.ipynb_checkpoints/frogs-checkpoint.csv
+.ipynb_checkpoints/week-31-eda-checkpoint.jl
+.DS_Store
