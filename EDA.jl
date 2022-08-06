@@ -17,22 +17,25 @@ md"""
 # Week 31: Frogs EDA
 ## Background
 
-The Oregon spotted frog (Rana pretiosa) is a medium-sized anuran native to the northwestern United States. Body coloration ranges from brown or tan to brick red, usually overlaid with dark, ragged spots. Oregon spotted frogs can be distinguished from other native species by their relatively short hind legs, orange or red wash of color on underside of abdomen and legs, and upturned chartreuse eyes. They are associated with freshwater marshes and lakes where they breed in early spring in warm emergent vegetated shallows. The Oregon spotted frog is highly aquatic and reliant on connected seasonal habitats for breeding, summer foraging, and overwintering.
-
-Oregon spotted frogs once occurred from southwest British Columbia to northeastern California. They appear to be lost from California and Oregon’s Willamette Valley. Hypothesized reasons for their decline include habitat loss and alteration, invasive predators and competitors, and water quality degradation. Most of known populations are currently located along the Cascade Range in central Oregon. The Oregon spotted frog was listed as Threatened under the Endangered Species Act in 2014.
-
-USGS Research – Status and Trends, Threat Assessments
-
-The USGS Forest and Rangeland Ecosystem Science Center (FRESC) is the Pacific Northwest hub for the US Department of Interior’s Amphibian Research and Monitoring Initiative (ARMI). Over the past 15 years, biologists in Dr. Michael Adams’s laboratory at FRESC have monitored occupancy patterns, abundance, and population demography to better understand the status of Oregon spotted frog in Oregon. Through a combination of observational, experimental, and modeling techniques, researchers examine relationships between Oregon spotted frog population trends and habitat variables to understand factors contributing to Oregon spotted frog declines.
-
-USGS and partners have also evaluated interagency efforts to translocate Oregon spotted frogs. Long-term monitoring of relocated populations through mark-recapture efforts allows researchers to estimate probabilities of site colonization or extinction, as well as survival and growth rates for different sexes and life stages. This information can help managers plan for future translocations by understanding the underlying causes for a project’s success or failure.
-
-USGS researchers disseminate their findings on Oregon spotted frog conservation to the public through various modes, including formal Oregon spotted frog status reports, peer-reviewed journal publications, and the popular media.
-
-The Herpetology Lab works with a variety of academic, non profit, and federal and state agency partners. Results are disseminated in a variety of ways, including peer-reviewed journal publications, scientific meetings, public presentations, and the popular media.
+> The Oregon spotted frog (Rana pretiosa) is a medium-sized anuran native to the northwestern United States. Body coloration ranges from brown or tan to brick red, usually overlaid with dark, ragged spots. Oregon spotted frogs can be distinguished from other native species by their relatively short hind legs, orange or red wash of color on underside of abdomen and legs, and upturned chartreuse eyes. They are associated with freshwater marshes and lakes where they breed in early spring in warm emergent vegetated shallows. The Oregon spotted frog is highly aquatic and reliant on connected seasonal habitats for breeding, summer foraging, and overwintering.
+> 
+> Oregon spotted frogs once occurred from southwest British Columbia to northeastern California. They appear to be lost from California and Oregon’s Willamette Valley. Hypothesized reasons for their decline include habitat loss and alteration, invasive predators and competitors, and water quality degradation. Most of known populations are currently located along the Cascade Range in central Oregon. The Oregon spotted frog was listed as Threatened under the Endangered Species Act in 2014.
+> 
+> USGS Research – Status and Trends, Threat Assessments
+> 
+> The USGS Forest and Rangeland Ecosystem Science Center (FRESC) is the Pacific Northwest hub for the US Department of Interior’s Amphibian Research and Monitoring Initiative (ARMI). Over the past 15 years, biologists in Dr. Michael Adams’s laboratory at FRESC have monitored occupancy patterns, abundance, and population demography to better understand the status of Oregon spotted frog in Oregon. Through a combination of observational, experimental, and modeling techniques, researchers examine relationships between Oregon spotted frog population trends and habitat variables to understand factors contributing to Oregon spotted frog declines.
+> 
+> USGS and partners have also evaluated interagency efforts to translocate Oregon spotted frogs. Long-term monitoring of relocated populations through mark-recapture efforts allows researchers to estimate probabilities of site colonization or extinction, as well as survival and growth rates for different sexes and life stages. This information can help managers plan for future translocations by understanding the underlying causes for a project’s success or failure.
+> 
+> USGS researchers disseminate their findings on Oregon spotted frog conservation to the public through various modes, including formal Oregon spotted frog status reports, peer-reviewed journal publications, and the popular media.
+> 
+> The Herpetology Lab works with a variety of academic, non profit, and federal and state agency partners. Results are disseminated in a variety of ways, including peer-reviewed journal publications, scientific meetings, public presentations, and the popular media.
 
 [Source](https://www.usgs.gov/centers/forest-and-rangeland-ecosystem-science-center/science/oregon-spotted-frog)
+"""
 
+# ╔═╡ 4c253e1c-005b-499c-88be-313d88323844
+md"""
 ### What Stands out
 
 - The Oregon spotted frog are are in decline potentially due to habitat loss and alteration, invasive predators and competitors, and water quality degredation.
@@ -40,11 +43,18 @@ The Herpetology Lab works with a variety of academic, non profit, and federal an
 - It's population has shrunk from a range of BC to northeastern California all the way to the Cascade Range in central Oregon.
 
 - Researchers use mark and recapture to track species.
+"""
 
+# ╔═╡ bad52c6c-0239-4ae7-a947-310e5bbd176a
+md"""
 ## Initial Ideas
 
 I think it could be fun to do a map of showing the where the species used to exist and where they exist now. I could do a scrolly showing the decline with major events.
+"""
 
+
+# ╔═╡ 72db4913-d3f8-4075-9b10-dac79e59a4c7
+md"""
 ## EDA
 Looking through the data, I can immediately say that my initial idea will not work. All the data has been collected in 2018.
 
@@ -151,6 +161,13 @@ Females were almost three-times as detected as males. Frogs change species I thi
 # ╔═╡ a426a09a-7f7f-4b50-b135-e1a0b40f35eb
 combine(groupby(RawData, :Female), nrow)
 
+# ╔═╡ 8f1e7c0d-202c-419f-95da-bb8e5277ac42
+plot(RawData,
+	 x="UTME_83",
+	 y="UTMN_83",
+	 color="Female",
+	 Geom.point)
+
 # ╔═╡ efab7b0c-9b7b-4646-913c-2316a0c35768
 md"""
 The frogs prefered shallow water. I really hope there is a detailed map for this. It would be cool to map the occurances and then model a probabilistic map too.
@@ -204,6 +221,13 @@ I expect some correlation in the data here.
 # ╔═╡ 0aa72455-4c59-4529-b916-1a6ac7f3e021
 combine(groupby(RawData, :Substrate), nrow)
 
+# ╔═╡ 0f8e51e6-d162-478c-ae81-922d701a5871
+plot(RawData,
+	 x="UTME_83",
+	 y="UTMN_83",
+	 color="Substrate",
+	 Geom.point)
+
 # ╔═╡ d3fd6cae-a2dc-44aa-9546-3ef661d376cc
 md"""
 Wow, these frogs were not found in the same locations as beavers. I keep thinking of causal relationships. This one definetly seems interesting though.
@@ -242,6 +266,10 @@ Well, I think it could be interesting to plot some contour maps of the no beaver
 Some abstract visual could be really fun.
 
 Also, I think I want to check the correlation between the categorical variables. I would be looking at Pearson's Chi-square test. I wonder if there is a Bayesian equivalent.
+
+Maybe I can ask, when is the best time to catch a frog?
+
+Maybe a scrolly with the probability contours of finding a frog in the area updating through time? Priors could just be a flat distance away from the water edge?
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -933,8 +961,11 @@ uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
 """
 
 # ╔═╡ Cell order:
-# ╠═f8b9fec9-f521-4069-86ad-a302dc4024ff
+# ╟─f8b9fec9-f521-4069-86ad-a302dc4024ff
 # ╟─ad83c1bf-8343-4ede-9c96-b7fd2218b8ff
+# ╟─4c253e1c-005b-499c-88be-313d88323844
+# ╟─bad52c6c-0239-4ae7-a947-310e5bbd176a
+# ╟─72db4913-d3f8-4075-9b10-dac79e59a4c7
 # ╠═15a747b5-d2e4-432d-8991-9f78e19643a5
 # ╟─6b7dbe09-dd76-4421-ba9a-13233ac3230e
 # ╠═3d0f4384-c15c-42dd-a43e-8f71aaad5410
@@ -947,6 +978,7 @@ uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
 # ╠═3eeb39cf-c3e9-4a79-a21b-1088a1d39174
 # ╟─02b4711d-53fc-4ddb-9c0f-8eb50405a647
 # ╠═a426a09a-7f7f-4b50-b135-e1a0b40f35eb
+# ╠═8f1e7c0d-202c-419f-95da-bb8e5277ac42
 # ╟─efab7b0c-9b7b-4646-913c-2316a0c35768
 # ╠═db7717b1-69eb-45e0-b65d-1c6f0edf75e6
 # ╟─cd1e0571-f90a-4ff9-b79f-662a0b283347
@@ -958,6 +990,7 @@ uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
 # ╠═00c10302-797b-473f-a9c0-2fb851620836
 # ╟─2bce8bc8-7ddb-493b-b5ae-bf9cca98fbf6
 # ╠═0aa72455-4c59-4529-b916-1a6ac7f3e021
+# ╠═0f8e51e6-d162-478c-ae81-922d701a5871
 # ╟─d3fd6cae-a2dc-44aa-9546-3ef661d376cc
 # ╠═ac720c44-7615-4491-aa70-c810ef9ceca9
 # ╠═8e3a1a8b-4475-496a-a5b7-ed7456806eeb
