@@ -1,6 +1,11 @@
 ### A Pluto.jl notebook ###
 # v0.19.11
 
+#> [frontmatter]
+#> title = "TidyTuesday: Week 31, 2022"
+#> tags = ["EDA", "Julia", "Frogs", "TidyTuesday"]
+#> description = "Exploratory Data Analysis"
+
 using Markdown
 using InteractiveUtils
 
