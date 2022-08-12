@@ -164,7 +164,7 @@ ggplot(aes(x=opened, y=country), data=figure_data) +
 ```{r final plot}
 final_plot <- ggplot(aes(x=opened, y=country), data=figure_data) +
   geom_line(size=.4) +
-  geom_jitter(alpha=.3, stroke=.4, height=.12, aes(color=status, x=opened, y=country, size=seating_capacity), data=figure_data) +
+  geom_jitter(alpha=1, stroke=.4, height=.12, aes(color=status, x=opened, y=country, size=seating_capacity), data=figure_data) +
   theme(aspect.ratio=1) +
   ylab("") +
   xlab("") +
@@ -172,7 +172,7 @@ final_plot <- ggplot(aes(x=opened, y=country), data=figure_data) +
 ```
 
 ```{r export}
-ggsave(file="final_plot.svg", plot=final_plot)
+# ggsave(file="final_plot.svg", plot=final_plot)
 ```
 
 Awesome, there it is! I should include a label showing japan has 64 seats in the small ~1965 ferris wheel. And the ~2017 US one has a max of 1440.
