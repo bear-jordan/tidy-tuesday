@@ -1,0 +1,180 @@
+---
+title: "Week 32 - Ferris Wheels"
+output: hugodown::md_document
+author: "Bear Jordan"
+date: "2022-08-09"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r library, include=FALSE}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(forcats)
+library(svglite)
+
+theme_set(theme_minimal())
+```
+
+## Ferris Wheels
+
+For this week, I want to ask did the development of ferris wheels in one country effect the development of ferris wheels in another country?
+
+```{r load data}
+wheels <- read.csv("wheels.csv")
+head(wheels)
+```
+
+
+## Data Selection and EDA
+
+Here is the data I plan to use for the figure.
+
+```{r figure_data}
+figure_data <- wheels %>% 
+  select(country, opened, name, seating_capacity, status) %>% 
+  drop_na()
+head(figure_data)
+```
+```{r fix_date}
+figure_data$opened <- as.Date(figure_data$opened)
+figure_data$country <- as.factor(figure_data$country)
+```
+
+
+As a sanity check, I expect the capactity to increase through time.
+
+```{r hyp_test}
+plot(x=figure_data$opened,
+     y=figure_data$seating_capacity,
+     main="Does seating capacity increase?",
+     xlab="",
+     ylab="Seating Capacity",
+     las=1)
+```
+
+Interesting, I wonder what happened in the earlier years.
+
+```{r hyp_follow_up}
+figure_data %>% 
+  filter(opened<"1910-01-01") %>% 
+  filter(seating_capacity>750)
+```
+
+The Great Wheel sounds wild---it was built in London after the sucess of the Chicago Ferris Wheel. No big horror stories it looks like though.
+
+## Figure Construction
+
+```{r plot 1}
+ggplot(aes(x=opened, y=country, size=seating_capacity), data=figure_data) +
+  geom_point(alpha=.3, stroke=.8) +
+  geom_line(size=.4)
+```
+
+Well, this won't do. I want to sort these by the length of the line. And there is way to much empty space. I will try filtering the data again to only focus on things past 1950. I am just going to select countries with more than one ferris wheel too.
+
+```{r new_data}
+print(unique(figure_data$country))
+country_filter <- figure_data %>% 
+  count(country) %>% 
+  filter(n!=1) %>% 
+  select(country)
+
+country_filter <- country_filter$country
+
+figure_data <- figure_data %>% 
+  filter(opened>"1955-01-01") %>% 
+  filter(country %in% country_filter)
+```
+
+Okay, try this again.
+
+```{r plot 2}
+ggplot(aes(x=opened, y=country, size=seating_capacity), data=figure_data) +
+  geom_point(alpha=.3, stroke=.8) +
+  geom_line(size=.4)
+```
+
+Better maybe I will sort decending by the most recent ferris wheel.
+
+```{r order}
+plot_order <- figure_data %>% 
+  group_by(country) %>% 
+  top_n(1, opened) %>% 
+  arrange(opened)
+
+plot_order <- plot_order$country
+
+figure_data$country <- factor(figure_data$country, levels = plot_order)
+```
+
+```{r plot 3}
+ggplot(aes(x=opened, y=country, size=seating_capacity, color=status), data=figure_data) +
+  geom_point(alpha=.3, stroke=.8) +
+  geom_line(size=.4)
+```
+
+Okay, it seems crazy... does japan have one being built?
+
+```{r japan}
+wheels %>% 
+  filter(country=="Japan") %>% 
+  arrange(opened)
+```
+
+I want to clean up the status codes
+
+```{r status}
+figure_data <- figure_data %>% 
+  filter(status %in% c("Defunct", "Operating", "Under Construction"))
+```
+
+```{r plot 4}
+ggplot(aes(x=opened, y=country, size=seating_capacity, color=status), data=figure_data) +
+  geom_point(alpha=.3, stroke=.8) +
+  geom_line(size=.4)
+```
+
+Okay, why doesn't Malaysia have a line?
+
+```{r malaysia}
+figure_data %>% 
+  filter(country=="Malaysia") %>% 
+  ggplot(aes(x=opened, y=country, color=status)) +
+      geom_point() +
+      geom_line()
+```
+
+Okay, it looks like I need to place the color in the point.
+
+```{r plot 5}
+ggplot(aes(x=opened, y=country), data=figure_data) +
+  geom_line(size=.4) +
+  geom_point(alpha=1, stroke=.5, shape=21, color="black", aes(x=opened, y=country, size=seating_capacity), data=figure_data) +
+  geom_point(alpha=.3, stroke=0, aes(color=status, x=opened, y=country, color=status, size=seating_capacity), data=figure_data) +
+  theme(aspect.ratio=1) +
+  ylab("") +
+  xlab("") +
+  scale_size_area(max_size=10)
+```
+
+```{r final plot}
+final_plot <- ggplot(aes(x=opened, y=country), data=figure_data) +
+  geom_line(size=.4) +
+  geom_jitter(alpha=1, stroke=.4, height=.12, aes(color=status, x=opened, y=country, size=seating_capacity), data=figure_data) +
+  theme(aspect.ratio=1) +
+  ylab("") +
+  xlab("") +
+  scale_size_area(max_size=10)
+```
+
+```{r export}
+# ggsave(file="final_plot.svg", plot=final_plot)
+```
+
+Awesome, there it is! I should include a label showing japan has 64 seats in the small ~1965 ferris wheel. And the ~2017 US one has a max of 1440.
+
+What happened to Malaysia's recently defunct one?
