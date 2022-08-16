@@ -1,6 +1,6 @@
 ---
 title: "Week 32 - Ferris Wheels"
-output: html_document
+output: hugodown::md_document
 author: "Bear Jordan"
 date: "2022-08-09"
 ---
