@@ -4,63 +4,19 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ 1826ccb6-1d5d-11ed-2b9d-9537a984ce40
+# ╔═╡ 12f8c80c-e21b-4764-8b1a-063bece9a497
 begin
 	using CSV
 	using DataFrames
+	using Pipe
 end
 
-# ╔═╡ de995ef3-4143-4525-9100-b2f99ecee4da
-characters = CSV.read("characters.csv", DataFrame);
-
-# ╔═╡ f2039599-2f4c-46f8-b534-8f911a368302
-first(characters, 5)
-
-# ╔═╡ 9c4dcd4f-01f6-43c6-9a78-4a1334382094
-describe(characters)
-
-# ╔═╡ 0d630055-6d46-4f8c-b481-dd6f1bf3ce3c
-sort(unique(select(characters, :uni_name)))
-
-# ╔═╡ 909528c8-aebd-4ce7-b178-8cd4a05fc189
+# ╔═╡ 96c81876-1db5-11ed-1db0-45f754160f4b
 md"""
-Okay, I would love to do something with Calvin and Hobbes.
-"""
+# Preparing the Data
+The goal is to create a range chart showing what Susie and Calvin have in common.
 
-# ╔═╡ 403bc1e1-b210-42de-8d22-fbf6e23ab277
-ch_chars = filter(:uni_name=>id->id=="Calvin and Hobbes", characters)
-
-# ╔═╡ 752b4305-1b56-4c3c-9097-5e38f1f6c805
-md"""
-Okay, maybe some kind of summary plot showing the relationship and how they fit in or stand out?
-
-# How much are Calvin and Susie like Clavin's mom and dad?
-"""
-
-# ╔═╡ 03755548-84c5-4438-a5e5-18bac4e4a62e
-md"""
-So I picture something like a horizontal range chart showing the difference in quantile between Calvin and Susie and the parents.
-"""
-
-# ╔═╡ b6da683c-f6e4-4a6a-a232-4d4a1fba3bec
-myers_briggs = CSV.read("myers_briggs.csv", DataFrame);
-
-# ╔═╡ 582a5774-a8bd-46cd-a466-9ac76e3aaa82
-psych_stats = CSV.read("psych_stats.csv", DataFrame);
-
-# ╔═╡ 7b61558b-7778-4111-8966-74cd0f38a556
-first(psych_stats, 5)
-
-# ╔═╡ 4be798d0-1a54-4b10-a39f-703ac4182c3a
-md"""
-Okay, so I guess the question is, where do the set of characters align the most, and where are they most different?
-
-Just looking at Susie and Calvin would be better. After normalizing their responses, I will find the areas they are most similar and least similar. It would be cool to do this by the questions too. Maybe have the question (e.g. messy/neat) as the axis, and show the divergence from there.
-"""
-
-# ╔═╡ f0c8457c-3c2c-4bae-ad08-4605e5793ce3
-md"""
-Okay, so I need to...
+Here is the plan...
 - Create quantiles for each question.
 - Encode first bit to negative axis, and second bit to the postive axis.
 - Score Susie and Calvin based on these axes.
@@ -68,15 +24,47 @@ Okay, so I need to...
 - Find the top the most different.
 """
 
+# ╔═╡ 2648c7b4-65c9-43ce-b0cf-97bded70d22e
+psych_data = CSV.read("psych_stats.csv", DataFrame);
+
+# ╔═╡ 1dd44e6f-79c7-4b31-a644-6dc937c029f2
+first(psych_data, 5)
+
+# ╔═╡ 0c37a2a7-16bc-4a14-9671-50de20a6975c
+md"""
+Okay, now I need to do something to create the quantiles for each question. I guess first, let's try to get the data grouped together correctly.
+"""
+
+# ╔═╡ 72de4edc-9a40-4f55-aca6-5e769beb8acc
+cs_data = @pipe psych_data |>
+	filter(:uni_id=>u->u=="CH", _) |>
+    filter(:char_name=>c->(c=="Calvin")||(c=="Susie Derkins"), _);
+
+# ╔═╡ aaa22444-3f23-49b7-be10-4881c7ac1564
+function check_sign(avg_rating, personality, question)
+	if 1 in findfirst(personality, question)
+		return -1*avg_rating
+	end
+	return avg_rating
+end
+
+# ╔═╡ b05c7cdd-0ce7-4be9-8683-d19a6247a56f
+select(cs_data, [:avg_rating, :personality, :question]=>ByRow(check_sign)=>:signed_rating)
+
+# ╔═╡ 04e7498d-c295-46c4-bb3f-50d407580ad5
+
+
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+Pipe = "b98c9c47-44ae-5843-9183-064241ee97a0"
 
 [compat]
 CSV = "~0.10.4"
 DataFrames = "~1.3.4"
+Pipe = "~1.3.0"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -263,6 +251,11 @@ git-tree-sha1 = "0044b23da09b5608b4ecacb4e5e6c6332f833a7e"
 uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
 version = "2.3.2"
 
+[[deps.Pipe]]
+git-tree-sha1 = "6842804e7867b115ca9de748a0cf6b364523c16d"
+uuid = "b98c9c47-44ae-5843-9183-064241ee97a0"
+version = "1.3.0"
+
 [[deps.Pkg]]
 deps = ["Artifacts", "Dates", "Downloads", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Serialization", "TOML", "Tar", "UUIDs", "p7zip_jll"]
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
@@ -390,19 +383,14 @@ uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
 """
 
 # ╔═╡ Cell order:
-# ╠═1826ccb6-1d5d-11ed-2b9d-9537a984ce40
-# ╠═de995ef3-4143-4525-9100-b2f99ecee4da
-# ╠═f2039599-2f4c-46f8-b534-8f911a368302
-# ╠═9c4dcd4f-01f6-43c6-9a78-4a1334382094
-# ╠═0d630055-6d46-4f8c-b481-dd6f1bf3ce3c
-# ╟─909528c8-aebd-4ce7-b178-8cd4a05fc189
-# ╠═403bc1e1-b210-42de-8d22-fbf6e23ab277
-# ╟─752b4305-1b56-4c3c-9097-5e38f1f6c805
-# ╟─03755548-84c5-4438-a5e5-18bac4e4a62e
-# ╠═b6da683c-f6e4-4a6a-a232-4d4a1fba3bec
-# ╠═582a5774-a8bd-46cd-a466-9ac76e3aaa82
-# ╠═7b61558b-7778-4111-8966-74cd0f38a556
-# ╠═4be798d0-1a54-4b10-a39f-703ac4182c3a
-# ╟─f0c8457c-3c2c-4bae-ad08-4605e5793ce3
+# ╟─96c81876-1db5-11ed-1db0-45f754160f4b
+# ╠═12f8c80c-e21b-4764-8b1a-063bece9a497
+# ╠═2648c7b4-65c9-43ce-b0cf-97bded70d22e
+# ╠═1dd44e6f-79c7-4b31-a644-6dc937c029f2
+# ╟─0c37a2a7-16bc-4a14-9671-50de20a6975c
+# ╠═72de4edc-9a40-4f55-aca6-5e769beb8acc
+# ╠═aaa22444-3f23-49b7-be10-4881c7ac1564
+# ╠═b05c7cdd-0ce7-4be9-8683-d19a6247a56f
+# ╠═04e7498d-c295-46c4-bb3f-50d407580ad5
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
