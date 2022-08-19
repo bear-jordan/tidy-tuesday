@@ -9,19 +9,25 @@ begin
 	using CSV
 	using DataFrames
 	using Pipe
+	using StatsBase
 end
 
 # ╔═╡ 96c81876-1db5-11ed-1db0-45f754160f4b
 md"""
 # Preparing the Data
-The goal is to create a range chart showing what Susie and Calvin have in common.
+The goal is to create a range chart showing what Calvin and Hobbes have in common.
 
 Here is the plan...
 - Create quantiles for each question.
 - Encode first bit to negative axis, and second bit to the postive axis.
-- Score Susie and Calvin based on these axes.
+- Score Hobbes and Calvin based on these axes.
 - Find the top 3 most similar.
 - Find the top the most different.
+"""
+
+# ╔═╡ 1bbef507-bd27-44a7-a001-0e2765bee3a5
+md"""
+## Loading the Data
 """
 
 # ╔═╡ 2648c7b4-65c9-43ce-b0cf-97bded70d22e
@@ -38,21 +44,111 @@ Okay, now I need to do something to create the quantiles for each question. I gu
 # ╔═╡ 72de4edc-9a40-4f55-aca6-5e769beb8acc
 cs_data = @pipe psych_data |>
 	filter(:uni_id=>u->u=="CH", _) |>
-    filter(:char_name=>c->(c=="Calvin")||(c=="Susie Derkins"), _);
-
-# ╔═╡ aaa22444-3f23-49b7-be10-4881c7ac1564
-function check_sign(avg_rating, personality, question)
-	if 1 in findfirst(personality, question)
-		return -1*avg_rating
-	end
-	return avg_rating
-end
-
-# ╔═╡ b05c7cdd-0ce7-4be9-8683-d19a6247a56f
-select(cs_data, [:avg_rating, :personality, :question]=>ByRow(check_sign)=>:signed_rating)
+    filter(:char_name=>c->(c=="Calvin")||(c=="Hobbes"), _);
 
 # ╔═╡ 04e7498d-c295-46c4-bb3f-50d407580ad5
+first(cs_data, 5)
 
+# ╔═╡ 9d8c5c24-aecd-48dc-8b5a-48ed1d251850
+md"""
+### Quantiles
+"""
+
+# ╔═╡ fc340bc2-aa7d-4869-99f7-5647ab84588b
+function get_quant(personality, char_name)
+	data = @pipe psych_data |>
+	             filter(:personality=>p->p==personality, _) |>
+	             _.avg_rating
+	quest_dist = ecdf(data)
+	return @pipe cs_data |>
+                 filter(:personality=>p->p==personality, _) |>
+	             filter(:char_name=>cn->cn==char_name, _) |>
+	             quest_dist(_.avg_rating)
+end
+
+# ╔═╡ 2dadf858-1cbc-44a6-9db9-e6d863372a94
+begin
+	question_list = unique(psych_data.question)
+	char_list = ["Calvin", "Hobbes"]
+	result_char = String[]
+	result_quest = String[]
+	result_pers = String[]
+	result_quant = Float64[]
+	for q in question_list, c in char_list
+		p = @pipe cs_data |>
+        	filter(:question=>qs->qs==q, _) |>
+	    	filter(:char_name=>cn->cn==c, _) |>
+	        _.personality[1]
+		push!(result_char, c)
+		push!(result_quest, q)
+		push!(result_pers, p)
+		push!(result_quant, get_quant(p, c)[1])
+	end
+	cs_quants = DataFrame(question=result_quest, character=result_char, personality=result_pers, quantile=result_quant);
+end
+
+# ╔═╡ 63ccbd2a-bfc6-4b19-9eb7-a3dc71fc5fde
+function check_sign(question, character, personality, quantile)
+	return 1 in findfirst(personality, question)
+end
+
+# ╔═╡ 93558748-bbee-4d03-b54a-927ee3b745ab
+transform!(cs_quants, names(cs_quants)=>ByRow(check_sign)=>:is_left);
+
+# ╔═╡ 6893de23-1bc5-4bf3-befe-cb936eb36841
+begin
+	cs_question_list = unique(cs_quants.question)
+	difference_results = Float64[]
+	calvin_personality = String[]
+	hobbes_personality = String[]
+	for q in question_list
+		equals_question(question::String) = question == q
+		equals_calvin(name::String) = name == "Calvin"
+		equals_hobbes(name::String) = name == "Hobbes"
+		
+		subset = filter(:question=>equals_question, cs_quants)
+		
+		left_calvin = @pipe filter(:character=>equals_calvin, subset) |>
+            _.is_left
+		left_hobbes = @pipe filter(:character=>equals_hobbes, subset) |>
+            _.is_left
+		quant_calvin = @pipe filter(:character=>equals_calvin, subset) |>
+            _.quantile[1]
+		quant_hobbes =@pipe filter(:character=>equals_hobbes, subset) |>
+			_.quantile[1]
+
+		difference = 0
+		if left_calvin == left_hobbes
+			difference = quant_calvin-quant_hobbes
+		else
+			difference = quant_calvin+quant_hobbes
+		end
+
+		calvin_p = @pipe filter(:character=>equals_calvin, subset) |>
+		    _.personality[1]
+	    hobbes_p = @pipe filter(:character=>equals_hobbes, subset) |>
+		    _.personality[1]
+
+		
+		push!(difference_results, abs(difference))
+		push!(calvin_personality, calvin_p)
+		push!(hobbes_personality, hobbes_p)
+		
+	end
+	plot_data = DataFrame(calvin=calvin_personality, hobbes=hobbes_personality, difference = difference_results)
+	sort!(plot_data, :difference, rev=true);
+end
+
+# ╔═╡ 789164c8-64c4-417e-93f7-ab8631d6fb5e
+md"""
+Are best friends more alike or different, create a plot showing the percentile differences as a funnel / tornado plot.
+dashed line at the middle, alike on bottom, different on the top.
+
+Small font on the side showing the top similarities and differneces
+"""
+
+# ╔═╡ b1bbcd06-b9b0-48df-8170-957e66472b76
+CSV.write("plot_data.csv", plot_data)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -60,11 +156,13 @@ PLUTO_PROJECT_TOML_CONTENTS = """
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 Pipe = "b98c9c47-44ae-5843-9183-064241ee97a0"
+StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 
 [compat]
 CSV = "~0.10.4"
 DataFrames = "~1.3.4"
 Pipe = "~1.3.0"
+StatsBase = "~0.33.21"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -88,6 +186,18 @@ deps = ["CodecZlib", "Dates", "FilePathsBase", "InlineStrings", "Mmap", "Parsers
 git-tree-sha1 = "873fb188a4b9d76549b81465b1f75c82aaf59238"
 uuid = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 version = "0.10.4"
+
+[[deps.ChainRulesCore]]
+deps = ["Compat", "LinearAlgebra", "SparseArrays"]
+git-tree-sha1 = "80ca332f6dcb2508adba68f22f551adb2d00a624"
+uuid = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
+version = "1.15.3"
+
+[[deps.ChangesOfVariables]]
+deps = ["ChainRulesCore", "LinearAlgebra", "Test"]
+git-tree-sha1 = "38f7a08f19d8810338d4f5085211c7dfa5d5bdd8"
+uuid = "9e997f8a-9a97-42d5-a9f1-ce6bfc15e2c0"
+version = "0.1.4"
 
 [[deps.CodecZlib]]
 deps = ["TranscodingStreams", "Zlib_jll"]
@@ -144,6 +254,12 @@ uuid = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 deps = ["Random", "Serialization", "Sockets"]
 uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 
+[[deps.DocStringExtensions]]
+deps = ["LibGit2"]
+git-tree-sha1 = "5158c2b41018c5f7eb1470d558127ac274eca0c9"
+uuid = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
+version = "0.9.1"
+
 [[deps.Downloads]]
 deps = ["ArgTools", "FileWatching", "LibCURL", "NetworkOptions"]
 uuid = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
@@ -177,10 +293,21 @@ version = "1.1.4"
 deps = ["Markdown"]
 uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
 
+[[deps.InverseFunctions]]
+deps = ["Test"]
+git-tree-sha1 = "b3364212fb5d870f724876ffcd34dd8ec6d98918"
+uuid = "3587e190-3f89-42d0-90ee-14403ec27112"
+version = "0.1.7"
+
 [[deps.InvertedIndices]]
 git-tree-sha1 = "bee5f1ef5bf65df56bdd2e40447590b272a5471f"
 uuid = "41ab1584-1d38-5bbf-9106-f11c6c58b48f"
 version = "1.1.0"
+
+[[deps.IrrationalConstants]]
+git-tree-sha1 = "7fd44fd4ff43fc60815f8e764c0f352b83c49151"
+uuid = "92d709cd-6900-40b7-9082-c6be49f344b6"
+version = "0.1.1"
 
 [[deps.IteratorInterfaceExtensions]]
 git-tree-sha1 = "a3f24677c21f5bbe9d2a714f95dcd58337fb2856"
@@ -209,6 +336,12 @@ uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
 [[deps.LinearAlgebra]]
 deps = ["Libdl", "libblastrampoline_jll"]
 uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+
+[[deps.LogExpFunctions]]
+deps = ["ChainRulesCore", "ChangesOfVariables", "DocStringExtensions", "InverseFunctions", "IrrationalConstants", "LinearAlgebra"]
+git-tree-sha1 = "361c2b088575b07946508f135ac556751240091c"
+uuid = "2ab3a3ac-af41-5b50-aa03-7779005ae688"
+version = "0.3.17"
 
 [[deps.Logging]]
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
@@ -322,6 +455,18 @@ uuid = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 deps = ["LinearAlgebra", "SparseArrays"]
 uuid = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
+[[deps.StatsAPI]]
+deps = ["LinearAlgebra"]
+git-tree-sha1 = "f9af7f195fb13589dd2e2d57fdb401717d2eb1f6"
+uuid = "82ae8749-77ed-4fe6-ae5f-f523153014b0"
+version = "1.5.0"
+
+[[deps.StatsBase]]
+deps = ["DataAPI", "DataStructures", "LinearAlgebra", "LogExpFunctions", "Missings", "Printf", "Random", "SortingAlgorithms", "SparseArrays", "Statistics", "StatsAPI"]
+git-tree-sha1 = "d1bf48bfcc554a3761a133fe3a9bb01488e06916"
+uuid = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
+version = "0.33.21"
+
 [[deps.TOML]]
 deps = ["Dates"]
 uuid = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
@@ -384,13 +529,20 @@ uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
 
 # ╔═╡ Cell order:
 # ╟─96c81876-1db5-11ed-1db0-45f754160f4b
+# ╟─1bbef507-bd27-44a7-a001-0e2765bee3a5
 # ╠═12f8c80c-e21b-4764-8b1a-063bece9a497
 # ╠═2648c7b4-65c9-43ce-b0cf-97bded70d22e
 # ╠═1dd44e6f-79c7-4b31-a644-6dc937c029f2
 # ╟─0c37a2a7-16bc-4a14-9671-50de20a6975c
 # ╠═72de4edc-9a40-4f55-aca6-5e769beb8acc
-# ╠═aaa22444-3f23-49b7-be10-4881c7ac1564
-# ╠═b05c7cdd-0ce7-4be9-8683-d19a6247a56f
 # ╠═04e7498d-c295-46c4-bb3f-50d407580ad5
+# ╟─9d8c5c24-aecd-48dc-8b5a-48ed1d251850
+# ╠═fc340bc2-aa7d-4869-99f7-5647ab84588b
+# ╠═2dadf858-1cbc-44a6-9db9-e6d863372a94
+# ╠═63ccbd2a-bfc6-4b19-9eb7-a3dc71fc5fde
+# ╠═93558748-bbee-4d03-b54a-927ee3b745ab
+# ╠═6893de23-1bc5-4bf3-befe-cb936eb36841
+# ╟─789164c8-64c4-417e-93f7-ab8631d6fb5e
+# ╠═b1bbcd06-b9b0-48df-8170-957e66472b76
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
