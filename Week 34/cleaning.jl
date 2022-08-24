@@ -12,9 +12,10 @@ raw_data = CSV.read(filepath, DataFrame)
 parse_date(d::AbstractString) = Dates.year(Date.(d, DateFormat("y-m-d")))
 is_gpu(type::AbstractString) = type=="GPU"
 is_nat(date::AbstractString) = date=="NaT"
-date_range(y::Int) = y==2011 || y==2021
-bad_max(y::Int, v::AbstractString) = y==2011 && v=="Max"
-bad_min(y::Int, v::AbstractString) = y==2021 && v=="Min"
+date_range(y::Int) = y==2010 || y==2020
+bad_max(y::Int, v::AbstractString) = y==2010 && v=="Max"
+bad_min(y::Int, v::AbstractString) = y==2020 && v=="Min"
+big_3(v::AbstractString) = v in ["AMD", "Intel", "NVIDIA"]
 
 gpu_data = @chain raw_data begin
     filter(:Type=>is_gpu, _)
@@ -30,6 +31,7 @@ figure_data = @chain gpu_data begin
 	stack(_, [:Min, :Max])
 	filter([:Year, :variable]=>!bad_max, _)
 	filter([:Year, :variable]=>!bad_min, _)
+	filter(:Vendor=>big_3, _)
 	select(_, [:Year, :Vendor, :value])
 end
 
