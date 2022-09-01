@@ -9,18 +9,29 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+```{r  library}
+library(tidyverse)
+library(ggplot2)
+library(ggtext)
+library(ggbump)
+library(systemfonts)
+library(camcorder)
+```
+
 ```{r camcorder}
-# gg_record(
-#     dir = file.path(tempdir(),"recording"), # where to save the recording
-#     device = "png", # device to use to save images
-#     width = 360, # width of saved image
-#     height = 740, # height of saved image
-#     units = "px", # units for width and height
-#     dpi = 600 # dpi to use when saving image
-# )
+gg_record(
+    dir = file.path(tempdir(),"recording"), # where to save the recording
+    device = "png", # device to use to save images
+    width = 3.75, # width of saved image
+    height = 7.7, # height of saved image
+    units = "in", # units for width and height
+    dpi = 600 # dpi to use when saving image
+)
 ```
 
 ```{r data cleaning}
+southeast = c("AL", "GA", "SC", "TN", "MS", "KY")
+
 pell <- read.csv("./pell.csv") %>% 
     rename(
         state = STATE,
@@ -31,32 +42,121 @@ pell <- read.csv("./pell.csv") %>%
         year = YEAR
     ) %>% 
     filter(year==2017) %>% 
+    filter(state %in% southeast) %>% 
     select(!(name:session)) %>% 
     group_by(state) %>% 
     summarise_at(c("award", "recipient"), sum, na.rm = TRUE) %>% 
     mutate(
+        award = case_when(
+            state == "GA" ~ award/10700000,
+            state == "TN" ~ award/6590000,
+            state == "AL" ~ award/4851000,
+            state == "KY" ~ award/4420000,
+            state == "SC" ~ award/4893000,
+            state == "MS" ~ award/2986000,
+        ),
         award_rank=rank(award, ties.method="random"),
-        recipient_rank=rank(recipient, ties.method="random")
+        recipient_rank=rank(recipient, ties.method="random"),
+        award_lab = glue::glue("${round(award, 1)}M/c"),
+        recipient_lab = glue::glue("{round(recipient/10^3, 1)}k"),
+        state_lab = case_when(
+            state == "MS" ~ "<b>MS</b>",
+            TRUE ~ state
+        )
     )
 ```
 
-```{r settings}
+```{r ggplot settings}
 theme_set(theme_void(base_family="Roboto Condensed"))
 theme_update(
     legend.position="none",
-    plot.margin=margin(25, 35, 15),
-    plot.background=element_rect(fill="#FFFBEF"),
-    plot.title=element_markdown(color="grey70",
-                                size=24,
+    plot.margin=margin(10, 10, 10, 10, unit="pt"),
+    plot.background=element_rect(fill="#e5e7e7"),
+    plot.title=element_markdown(color="grey10",
+                                size=20,
                                 family="Roboto Black",
                                 face="bold",
                                 lineheight=1.2),
-    plot.subtitle=element_markdown(color="grey50",
+    plot.subtitle=element_markdown(color="grey30",
                                    size=13,
                                    lineheight=1.2,
-                                   margin=margin(t=15, b=35)),
-    plot.caption=element_text(color="grey35",
+                                   margin=margin(t=15, b=60)),
+    plot.caption=element_text(color="grey75",
                               size=10,
-                              margin=margin(t=0))
+                              margin=margin(t=75))
+)
+```
+
+```{r figure}
+ggplot(pell) + 
+    geom_sigmoid(
+        aes(x = -10, xend = 10, 
+            y = award_rank, 
+            yend = recipient_rank, 
+            group = state,
+            color = award_rank), 
+        alpha = .45, smooth = 8, size = 1.2
+    ) +
+    geom_point(
+        aes(x = -10,
+            y = award_rank,
+            color = award_rank),
+            shape = "|",
+            size = 8
+    ) +
+    geom_point(
+        aes(x = 10,
+            y = recipient_rank,
+            color = recipient_rank),
+            shape = "|",
+            size = 8
+    ) +
+    geom_text(
+        aes(x = -11,
+            y = award_rank,
+            label = award_lab),
+        hjust = 1,
+        fill = NA
+    ) +
+    geom_text(
+        aes(x = 11,
+            y = recipient_rank,
+            label = recipient_lab),
+        hjust = 0,
+        fill = NA
+    ) +
+    geom_richtext(
+       aes(x = -11,
+           y = award_rank,
+           label = state_lab),
+       hjust = 1,
+       nudge_x = -15,
+       fill = NA,
+       label.size = NA
+    ) +
+    geom_richtext(
+       aes(x = 11,
+           y = recipient_rank,
+           label = state_lab),
+       hjust = 0,
+       nudge_x = 10,
+       fill = NA,
+       label.size = NA
+    ) +
+    coord_cartesian(clip = "off") +
+    scale_x_continuous(expand = c(.2, .2)) +
+    scale_y_continuous(expand = c(0, 0)) +
+    labs(title="Mississippi recieved the<br>highest**Pell Grant**<br>funding per capita<br>while having the<br>fewest students.",
+         subtitle="Check out how many recipients they have.",
+         caption = "Insipred by Cédric Scherer | Visualizaiton by Bear Jordan")
+```
+
+```{r save}
+ggsave(
+    "pell.svg",
+    width=3.75,
+    height=7.70,
+    units="in",
+    dpi=600
 )
 ```
