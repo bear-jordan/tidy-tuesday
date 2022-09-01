@@ -1,0 +1,62 @@
+---
+title: "Week 35 - Pell"
+author: "Bear Jordan"
+date: "2022-08-31"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r camcorder}
+# gg_record(
+#     dir = file.path(tempdir(),"recording"), # where to save the recording
+#     device = "png", # device to use to save images
+#     width = 360, # width of saved image
+#     height = 740, # height of saved image
+#     units = "px", # units for width and height
+#     dpi = 600 # dpi to use when saving image
+# )
+```
+
+```{r data cleaning}
+pell <- read.csv("./pell.csv") %>% 
+    rename(
+        state = STATE,
+        award = AWARD,
+        recipient = RECIPIENT,
+        name = NAME,
+        session = SESSION,
+        year = YEAR
+    ) %>% 
+    filter(year==2017) %>% 
+    select(!(name:session)) %>% 
+    group_by(state) %>% 
+    summarise_at(c("award", "recipient"), sum, na.rm = TRUE) %>% 
+    mutate(
+        award_rank=rank(award, ties.method="random"),
+        recipient_rank=rank(recipient, ties.method="random")
+    )
+```
+
+```{r settings}
+theme_set(theme_void(base_family="Roboto Condensed"))
+theme_update(
+    legend.position="none",
+    plot.margin=margin(25, 35, 15),
+    plot.background=element_rect(fill="#FFFBEF"),
+    plot.title=element_markdown(color="grey70",
+                                size=24,
+                                family="Roboto Black",
+                                face="bold",
+                                lineheight=1.2),
+    plot.subtitle=element_markdown(color="grey50",
+                                   size=13,
+                                   lineheight=1.2,
+                                   margin=margin(t=15, b=35)),
+    plot.caption=element_text(color="grey35",
+                              size=10,
+                              margin=margin(t=0))
+)
+```
