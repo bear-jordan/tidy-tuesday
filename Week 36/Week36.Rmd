@@ -1,0 +1,81 @@
+---
+title: "Week 36"
+author: "Bear Jordan"
+date: "2022-09-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r library}
+library(ggplot2)
+library(camcorder)
+library(ggtext)
+```
+
+```{r read data}
+data <- read.csv("./Data/weapons_per_set.csv")
+```
+
+```{r figure}
+bar <- ggplot(data, aes(y = WeaponsPerSet,
+                 x = Year)) +
+    geom_bar(stat = "identity",
+             fill = "#bb0a1e",
+             color = "#bb0a1e",
+             width = 1) +
+    theme_minimal() +
+    scale_x_continuous(position = "top",
+                       breaks = seq(1975, 2025, 5),
+                       limits = c(1978, 2022),
+                       labels = seq(1975, 2025, 5)) +
+    scale_y_reverse(expand=c(0,0),
+                    limits=c(max(data$WeaponsPerSet)*1.75,0),
+                    breaks = c(0.25, 0.5, 0.75, 1),
+                    labels = c(0.25, 0.5, 0.75, 1),
+                    position = "left") +
+    theme(
+        plot.margin = margin(10,10,10,10, "pt"),
+        plot.background = element_rect(),
+        panel.background = element_rect(fill = NA, color = NA),
+        axis.ticks.y = element_line(),
+        axis.ticks.x = element_line(size=1),
+        axis.text.x = element_text(size=12, hjust=0.5),
+        axis.line.x = element_line(size = .25),
+        axis.title = element_blank()
+    )
+bar
+```
+
+```{r save}
+ggsave(
+    "bar-chart.svg",
+    plot = bar,
+    width = 320,
+    height = 640,
+    units = "px",
+    scale = 4
+)
+```
+
+```{r load circle plot}
+circle_data <- read.csv("./Data/top_groups.csv")
+```
+
+```{r clean data}
+x <- c(1, 2, 3)
+y <- c(1, 1, 1)
+circle_data$x <- x
+circle_data$y <- y
+```
+
+```{r circle plot}
+ggplot(circle_data, aes(x=x, y=y, size=Total)) +
+    geom_point(color="#bb0a1e") +
+    theme_minimal() +
+    theme(
+        legend.position = "none"
+    )
+```
